@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jogo da Inclusão</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Lexend:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column on phones; on wide screens the start screen splits into text and art, and each adventure splits into the scene (left) and the three choices (right). */
+:root{
+  --sky:#DDF0FF; --ink:#1D2B53; --ink-2:#47568A; --paper:#FFFFFF;
+  --sun:#FFC93C; --sun-soft:#FFF1C2; --grass:#2FB36F; --grass-soft:#D5F5E3; --grass-deep:#1E9A63;
+  --coral:#FF6B6B; --coral-soft:#FFE3E1; --blue:#2F8CFF; --blue-soft:#DCEBFF; --grape:#7C5CFA; --grape-soft:#E9E2FF;
+  --font-display:'Fredoka','Baloo 2','Trebuchet MS',system-ui,sans-serif;
+  --font-body:'Lexend','Verdana',system-ui,sans-serif;
+  --lift:0 6px 0 var(--ink);
+}
+*{box-sizing:border-box}
+html{color-scheme:light}
+body{
+  margin:0;background:var(--sky);color:var(--ink);
+  font-family:var(--font-body);font-size:18px;line-height:1.5;
+  padding-block:20px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.wrap{max-width:1040px;margin:0 auto}
+h1,h2,h3{font-family:var(--font-display);font-weight:700;line-height:1.08;margin:0;text-wrap:balance}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:4px solid var(--blue);outline-offset:3px}
+h2[tabindex]:focus{outline:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.no-tts [data-say]{display:none}
+
+.card{border:3px solid var(--ink);border-radius:28px;background:var(--paper);box-shadow:var(--lift);overflow:hidden}
+.card svg{display:block;width:100%;height:auto}
+
+.btn{
+  display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--font-display);font-weight:700;font-size:1.35rem;line-height:1;
+  padding:16px 28px;background:var(--sun);color:var(--ink);
+  border:3px solid var(--ink);border-radius:999px;box-shadow:0 5px 0 var(--ink);
+  transition:transform .12s,box-shadow .12s;
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 7px 0 var(--ink)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--ink)}
+.btn.go{background:var(--grass)}
+.chip{
+  display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:1rem;
+  padding:9px 16px;background:var(--paper);color:var(--ink);
+  border:3px solid var(--ink);border-radius:999px;box-shadow:0 3px 0 var(--ink);
+}
+.chip:hover{background:var(--blue-soft)}
+.chip svg{width:22px;height:22px;flex:none}
+
+/* start */
+.start{display:grid;gap:28px;align-items:center;padding-block:8px}
+.intro{display:grid;gap:18px;justify-items:start}
+.h1-small{display:block;font-size:clamp(1.6rem,5vw,2.4rem);color:var(--ink-2);font-weight:600}
+.h1-big{display:inline-block;position:relative;font-size:clamp(3rem,12vw,5.6rem);letter-spacing:.005em}
+.squig{position:absolute;left:0;bottom:-8px;width:100%;height:12px}
+.lead{font-size:1.15rem;max-width:34em}
+.actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.hint{color:var(--ink-2);font-size:1rem}
+@media(min-width:860px){
+  .start{grid-template-columns:1fr 1fr;gap:48px}
+  .start .art{order:2}
+}
+
+/* play */
+.topbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px;margin-bottom:18px}
+.kicker{font-family:var(--font-display);font-weight:600;font-size:1.1rem;color:var(--ink-2);letter-spacing:.05em;text-transform:uppercase}
+.stars{display:flex;gap:4px}
+.star svg{width:clamp(22px,6.5vw,30px);height:auto;aspect-ratio:1;stroke:var(--ink);stroke-width:1.6;stroke-linejoin:round;fill:transparent;stroke-dasharray:3 2;opacity:.6}
+.star.got svg{fill:var(--sun);stroke-dasharray:none;opacity:1}
+.star.done svg{fill:var(--sun-soft);stroke-dasharray:none;opacity:1}
+.star.now svg{fill:var(--paper);stroke-dasharray:none;opacity:1;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.15)}}
+.stage{display:grid;gap:20px}
+@media(min-width:900px){.stage{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:32px;align-items:start}}
+.story{display:grid;gap:12px;margin-top:20px;justify-items:start}
+.story h2{font-size:clamp(1.8rem,5vw,2.5rem)}
+.situation{font-size:clamp(1.1rem,2.6vw,1.3rem);line-height:1.6;max-width:36em}
+.ask{font-size:1.35rem;margin-bottom:16px}
+.options{display:grid;gap:18px}
+.opt{
+  position:relative;display:grid;grid-template-columns:76px 1fr;align-items:center;gap:16px;
+  width:100%;min-height:96px;padding:10px 16px 10px 10px;text-align:left;
+  background:var(--paper);color:var(--ink);border:3px solid var(--ink);border-radius:24px;box-shadow:0 5px 0 var(--ink);
+  font-weight:600;font-size:clamp(1rem,2.4vw,1.12rem);line-height:1.35;
+  transition:transform .12s,box-shadow .12s,background .12s;
+}
+.opt:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 7px 0 var(--ink)}
+.opt:active:not(:disabled){transform:translateY(3px);box-shadow:0 2px 0 var(--ink)}
+.opt:disabled{cursor:default;color:var(--ink)}
+.opt .ico{width:76px;height:76px;padding:6px;border:3px solid var(--ink);border-radius:18px;display:grid;place-items:center}
+.opt .ico svg{width:100%;height:100%}
+.c0 .ico{background:var(--blue-soft)}
+.c1 .ico{background:var(--coral-soft)}
+.c2 .ico{background:var(--grape-soft)}
+.opt.is-wrong{background:#EEF0F6;color:var(--ink-2);box-shadow:0 2px 0 var(--ink);transform:translateY(3px)}
+.opt.is-wrong .ico{filter:grayscale(1);opacity:.65}
+.opt.is-right{background:var(--grass-soft);box-shadow:0 5px 0 var(--grass-deep)}
+.opt.is-other{background:#F4F6FA;color:var(--ink-2)}
+.opt.is-other .ico{filter:grayscale(.6);opacity:.7}
+.mark{position:absolute;top:-14px;right:-8px;width:38px;height:38px}
+.mark svg{width:100%;height:100%}
+.feedback{margin-top:22px;padding:18px 20px;border:3px solid var(--ink);border-radius:24px;display:grid;gap:12px;animation:rise .25s ease-out}
+.feedback.ok{background:var(--grass-soft)}
+.feedback.try{background:var(--sun-soft)}
+.fb-head{display:flex;align-items:center;gap:12px}
+.fb-head h3{font-size:1.5rem}
+.fb-ico{width:44px;height:44px;flex:none}
+.tip{background:var(--paper);border:2px solid var(--ink);border-radius:16px;padding:10px 14px;font-size:1rem}
+.fb-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* end */
+.end{display:grid;gap:26px}
+.score{display:grid;gap:14px;justify-items:start}
+.score h2{font-size:clamp(2rem,6vw,3.2rem)}
+.big-stars{display:flex;flex-wrap:wrap;gap:8px}
+.big-stars .star svg{width:clamp(34px,9vw,48px)}
+.found{font-size:1.5rem}
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:14px;margin:0;padding:0;list-style:none}
+.tool{display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;align-items:center;padding:12px;border:3px solid var(--ink);border-radius:20px;background:var(--paper)}
+.tool .ico{width:64px;height:64px;padding:5px;border:3px solid var(--ink);border-radius:16px;background:var(--blue-soft)}
+.tool .ico svg{display:block;width:100%;height:100%}
+.t-name{display:block;font-family:var(--font-display);font-size:1.15rem;font-weight:600}
+.t-desc{display:block;font-size:.95rem;color:var(--ink-2);line-height:1.4}
+
+#confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:20}
+#confetti i{position:absolute;top:-16px;width:10px;height:14px;border-radius:2px;animation:fall 1.5s ease-in forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(var(--r));opacity:.9}}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+
+  <section id="start" class="start">
+    <div class="art card" id="heroArt"></div>
+    <div class="intro">
+      <h1><span class="h1-small">Jogo da</span><span class="h1-big">Inclusão<svg class="squig" viewBox="0 0 200 14" preserveAspectRatio="none" aria-hidden="true"><path vector-effect="non-scaling-stroke" d="M2 8 Q14 0 26 8 T50 8 T74 8 T98 8 T122 8 T146 8 T170 8 T198 8" fill="none" stroke="#FF6B6B" stroke-width="5" stroke-linecap="round"/></svg></span></h1>
+      <p class="lead">Sete amigos precisam da sua ajuda. Escolha a melhor forma de ajudar cada um e descubra como a escola fica boa para todo mundo.</p>
+      <div class="actions">
+        <button class="btn go" id="go" type="button">Começar</button>
+        <button class="chip" type="button" data-say="intro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3,9 8,9 13,5 13,19 8,15 3,15" fill="currentColor"/><path d="M17 8.5 Q20 12 17 15.5"/></svg>Ouvir</button>
+      </div>
+      <p class="hint">Errou? Sem problema. É só tentar outra vez.</p>
+    </div>
+  </section>
+
+  <section id="play" hidden>
+    <div class="topbar">
+      <p class="kicker" id="kicker"></p>
+      <div class="stars" id="stars" role="img"></div>
+    </div>
+    <div class="stage">
+      <div class="left">
+        <div class="card" id="scene"></div>
+        <div class="story">
+          <h2 id="who" tabindex="-1"></h2>
+          <p class="situation" id="situation"></p>
+          <button class="chip" type="button" data-say="story"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3,9 8,9 13,5 13,19 8,15 3,15" fill="currentColor"/><path d="M17 8.5 Q20 12 17 15.5"/></svg>Ouvir a história</button>
+        </div>
+      </div>
+      <div class="right">
+        <h3 class="ask">Como você ajuda?</h3>
+        <div class="options" id="options" role="group" aria-label="Escolha uma opção"></div>
+        <div id="feedback" role="status" aria-live="polite" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="end" class="end" hidden>
+    <div class="score">
+      <div class="big-stars" id="bigStars" role="img"></div>
+      <h2 id="endTitle" tabindex="-1"></h2>
+      <p class="lead" id="endText"></p>
+      <div class="actions">
+        <button class="btn" type="button" id="again">Jogar de novo</button>
+        <button class="chip" type="button" data-say="end"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3,9 8,9 13,5 13,19 8,15 3,15" fill="currentColor"/><path d="M17 8.5 Q20 12 17 15.5"/></svg>Ouvir</button>
+      </div>
+    </div>
+    <h3 class="found">O que você descobriu</h3>
+    <ul class="tools" id="tools"></ul>
+  </section>
+
+</div>
+<div id="confetti" aria-hidden="true"></div>
+
+<script>
+(function(){
+'use strict';
+
+var INK='#1D2B53', CORAL='#FF6B6B', SUN='#FFC93C', BLUE='#2F8CFF', GRASS='#2FB36F', GRAPE='#7C5CFA';
+var S='stroke="'+INK+'" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"';
+
+/* ---------- characters ---------- */
+function hairSvg(st,c){
+  var cap='<path d="M-19.5 -88 C-22 -113 22 -113 19.5 -88 C13 -98.5 -13 -98.5 -19.5 -88Z" fill="'+c+'"/>';
+  if(st==='long') return {back:'<rect x="-23" y="-100" width="46" height="46" rx="20" fill="'+c+'"/>',front:cap};
+  if(st==='curly'){
+    var pts=[[-16,-101],[-6,-108],[6,-108],[16,-101],[-20,-92],[20,-92]];
+    return {back:'',front:pts.map(function(p){return '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="'+(Math.abs(p[0])>18?6:8)+'" fill="'+c+'"/>';}).join('')+cap};
+  }
+  if(st==='buns') return {back:'',front:'<circle cx="-15" cy="-109" r="8.5" fill="'+c+'"/><circle cx="15" cy="-109" r="8.5" fill="'+c+'"/>'+cap};
+  return {back:'',front:cap};
+}
+function legsSvg(pants,skin,prosth){
+  var u='<ellipse cx="0" cy="1" rx="26" ry="5" fill="rgba(29,43,83,.14)"/>';
+  if(prosth){
+    u+='<rect x="-12" y="-36" width="10" height="36" rx="5" fill="'+skin+'"/>';
+    u+='<rect x="3" y="-30" width="7" height="26" fill="#A7B3C6" stroke="'+INK+'" stroke-width="1.5"/>';
+    u+='<circle cx="6.5" cy="-20" r="5" fill="#DDE4F0" stroke="'+INK+'" stroke-width="1.5"/>';
+    u+='<rect x="-13" y="-38" width="12" height="16" rx="5" fill="'+pants+'"/><rect x="1" y="-38" width="12" height="16" rx="5" fill="'+pants+'"/>';
+    u+='<path d="M0 -4 L12 -4 Q17 -4 17 0 L0 0Z" fill="'+INK+'"/><ellipse cx="-8" cy="-1" rx="9" ry="4.5" fill="'+INK+'"/>';
+  } else {
+    u+='<rect x="-12" y="-36" width="10" height="36" rx="5" fill="'+pants+'"/><rect x="2" y="-36" width="10" height="36" rx="5" fill="'+pants+'"/>';
+    u+='<ellipse cx="-8" cy="-1" rx="9" ry="4.5" fill="'+INK+'"/><ellipse cx="8" cy="-1" rx="9" ry="4.5" fill="'+INK+'"/>';
+  }
+  return {under:u,over:''};
+}
+function chairSvg(pants){
+  var u='<ellipse cx="0" cy="1" rx="38" ry="5" fill="rgba(29,43,83,.14)"/>'+
+    '<path d="M-24 -48 L-27 -92" stroke="#5B6B93" stroke-width="5" stroke-linecap="round" fill="none"/>'+
+    '<line x1="26" y1="-44" x2="38" y2="-12" stroke="#5B6B93" stroke-width="4" stroke-linecap="round"/>'+
+    '<circle cx="38" cy="-8" r="8" fill="#8FA0C2" stroke="'+INK+'" stroke-width="3"/>'+
+    '<rect x="-26" y="-50" width="54" height="8" rx="4" fill="#5B6B93"/>'+
+    '<rect x="-6" y="-64" width="38" height="14" rx="7" fill="'+pants+'"/>'+
+    '<rect x="21" y="-62" width="13" height="44" rx="6.5" fill="'+pants+'"/>'+
+    '<rect x="26" y="-17" width="22" height="4" rx="2" fill="#5B6B93"/>'+
+    '<ellipse cx="38" cy="-20" rx="10" ry="4.5" fill="'+INK+'"/>';
+  var o='<circle cx="-8" cy="-26" r="25" fill="rgba(255,255,255,.35)" stroke="'+INK+'" stroke-width="5"/>'+
+    '<circle cx="-8" cy="-26" r="17" fill="none" stroke="#8FA0C2" stroke-width="2"/>'+
+    '<circle cx="-8" cy="-26" r="4" fill="'+INK+'"/>';
+  return {under:u,over:o};
+}
+function kid(c,o){
+  var a=Object.assign({x:0,y:214,s:1,flip:false,mood:'smile',arms:'dd',chair:false,prosth:false,cane:false,phones:false,badge:false},c,o||{});
+  var pants=a.pants||'#3B4F7D', style=a.style||'short', skin=a.skin, shirt=a.shirt;
+  var dy=a.chair?-14:0;
+  var hr=hairSvg(style,a.hair);
+  var low=a.chair?chairSvg(pants):legsSvg(pants,skin,a.prosth);
+  var mouth=a.mood==='open'
+    ?'<ellipse cx="0" cy="-79" rx="5" ry="4.4" fill="'+INK+'"/>'
+    :a.mood==='think'
+      ?'<path d="M-4 -79.5 Q0 -81.5 4 -79.5" fill="none" stroke="'+INK+'" stroke-width="2.4" stroke-linecap="round"/><path d="M-11 -97 L-3 -95.5 M11 -97 L3 -95.5" stroke="'+INK+'" stroke-width="2" stroke-linecap="round"/>'
+      :'<path d="M-6.5 -81 Q0 -74.5 6.5 -81" fill="none" stroke="'+INK+'" stroke-width="2.4" stroke-linecap="round"/>';
+  function arm(side,t){
+    var sx=side*16, sy=-66;
+    var ends={d:[side*24,-38],u:[side*29,-96],f:[side*42,-58]};
+    var e=ends[t]; var mx=sx+(e[0]-sx)*.45, my=sy+(e[1]-sy)*.45;
+    return '<line x1="'+sx+'" y1="'+sy+'" x2="'+e[0]+'" y2="'+e[1]+'" stroke="'+skin+'" stroke-width="9" stroke-linecap="round"/>'+
+           '<line x1="'+sx+'" y1="'+sy+'" x2="'+mx+'" y2="'+my+'" stroke="'+shirt+'" stroke-width="12" stroke-linecap="round"/>';
+  }
+  var torso='<rect x="-17" y="-74" width="34" height="44" rx="14" fill="'+shirt+'"/>'+
+    (a.badge?'<polygon points="0,-62 2.2,-56.5 8,-56 3.5,-52 5,-46 0,-49.5 -5,-46 -3.5,-52 -8,-56 -2.2,-56.5" fill="#fff"/>':'');
+  var head='<circle cx="-19" cy="-87" r="4.2" fill="'+skin+'"/><circle cx="19" cy="-87" r="4.2" fill="'+skin+'"/>'+
+    '<circle cx="0" cy="-88" r="19" fill="'+skin+'"/>'+
+    '<circle cx="-6.5" cy="-90" r="2.4" fill="'+INK+'"/><circle cx="6.5" cy="-90" r="2.4" fill="'+INK+'"/>'+
+    '<circle cx="-11.5" cy="-83.5" r="3.2" fill="#FF8FA3" opacity=".5"/><circle cx="11.5" cy="-83.5" r="3.2" fill="#FF8FA3" opacity=".5"/>'+mouth;
+  var phones=a.phones?'<path d="M-20 -90 A20 20 0 0 1 20 -90" fill="none" stroke="'+INK+'" stroke-width="4.5" stroke-linecap="round"/>'+
+    '<rect x="-26" y="-97" width="9" height="17" rx="4.5" fill="'+CORAL+'" stroke="'+INK+'" stroke-width="2"/>'+
+    '<rect x="17" y="-97" width="9" height="17" rx="4.5" fill="'+CORAL+'" stroke="'+INK+'" stroke-width="2"/>':'';
+  var cane=a.cane?'<line x1="42" y1="-58" x2="64" y2="-2" stroke="'+INK+'" stroke-width="6.5" stroke-linecap="round"/>'+
+    '<line x1="42" y1="-58" x2="64" y2="-2" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>'+
+    '<line x1="60.5" y1="-11" x2="64" y2="-2" stroke="'+CORAL+'" stroke-width="3.5" stroke-linecap="round"/>':'';
+  return '<g transform="translate('+a.x+' '+a.y+') scale('+(a.flip?-a.s:a.s)+' '+a.s+')">'+low.under+
+    '<g transform="translate(0 '+dy+')">'+hr.back+torso+arm(-1,a.arms.charAt(0))+arm(1,a.arms.charAt(1))+head+hr.front+phones+cane+'</g>'+low.over+'</g>';
+}
+
+var P={
+  you:{skin:'#E8B48A',shirt:'#FFC93C',hair:'#5A3A22',style:'short',badge:true},
+  leo:{skin:'#A86B45',shirt:'#2F8CFF',hair:'#1A1A1A',style:'curly',chair:true},
+  bia:{skin:'#7A4B30',shirt:'#FF6B6B',hair:'#1A1A1A',style:'buns'},
+  davi:{skin:'#F2C7A5',shirt:'#2FB36F',hair:'#D9A441',style:'short'},
+  mia:{skin:'#D99A6C',shirt:'#7C5CFA',hair:'#3B2314',style:'long'},
+  caio:{skin:'#8D5A3B',shirt:'#FF9F45',hair:'#1A1A1A',style:'short',phones:true},
+  theo:{skin:'#E8B48A',shirt:'#22BFC4',hair:'#8B4A2B',style:'short',prosth:true},
+  lia:{skin:'#FFDDBA',shirt:'#FF7AB6',hair:'#C2552A',style:'curly'},
+  ana:{skin:'#D99A6C',shirt:'#FF9F45',hair:'#2B1B12',style:'buns'},
+  nico:{skin:'#C98B5E',shirt:'#7C5CFA',hair:'#1A1A1A',style:'short'}
+};
+
+/* ---------- scene pieces ---------- */
+function cloud(x,y,s){s=s||1;return '<g transform="translate('+x+' '+y+') scale('+s+')" fill="#fff"><ellipse cx="0" cy="0" rx="28" ry="12"/><ellipse cx="-14" cy="-8" rx="14" ry="11"/><ellipse cx="10" cy="-11" rx="16" ry="13"/></g>';}
+function sky(){return '<rect width="480" height="240" fill="#BFE3FF"/><circle cx="430" cy="44" r="32" fill="none" stroke="#FFD84D" stroke-width="3" opacity=".5"/><circle cx="430" cy="44" r="24" fill="#FFD84D"/>'+cloud(70,50)+cloud(250,34,.8);}
+function grass(){return '<rect y="190" width="480" height="50" fill="#7ED6A0"/><rect y="190" width="480" height="5" fill="#5CC089"/>';}
+function tree(x){var y=190;return '<rect x="'+(x-5)+'" y="'+(y-48)+'" width="10" height="50" rx="3" fill="#8B5E3C"/><circle cx="'+x+'" cy="'+(y-62)+'" r="26" fill="#3FB871"/><circle cx="'+(x-16)+'" cy="'+(y-48)+'" r="16" fill="#3FB871"/><circle cx="'+(x+16)+'" cy="'+(y-48)+'" r="16" fill="#3FB871"/>';}
+function wins(x,y,cols,rows,gx,gy){var s='';for(var r=0;r<rows;r++)for(var c=0;c<cols;c++)s+='<rect x="'+(x+c*gx)+'" y="'+(y+r*gy)+'" width="12" height="14" rx="2" fill="#fff" opacity=".85"/>';return s;}
+function note(x,y,c){return '<g transform="translate('+x+' '+y+')"><circle cx="0" cy="12" r="5" fill="'+c+'"/><path d="M5 12 V-8 L15 -5" stroke="'+c+'" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>';}
+var STAR5='0,-12 3,-4 11,-3.5 5,1.5 7,10 0,5.5 -7,10 -5,1.5 -11,-3.5 -3,-4';
+
+function sceneHero(){
+  return sky()+grass()+
+    kid(P.leo,{x:64,y:214,arms:'du'})+kid(P.bia,{x:150,y:214,cane:true,arms:'df'})+
+    kid(P.you,{x:245,y:214,arms:'uu'})+kid(P.davi,{x:335,y:214,arms:'uu'})+kid(P.mia,{x:424,y:214,arms:'dd'});
+}
+function scene1(){
+  return sky()+grass()+
+  '<polygon points="232,48 360,16 488,48" fill="'+CORAL+'" stroke="'+INK+'" stroke-width="3" stroke-linejoin="round"/>'+
+  '<rect x="240" y="48" width="240" height="102" fill="#FFC2A1" stroke="'+INK+'" stroke-width="3"/>'+
+  '<rect x="262" y="76" width="40" height="36" rx="4" fill="#CFEAFF" stroke="'+INK+'" stroke-width="3"/>'+
+  '<rect x="418" y="76" width="40" height="36" rx="4" fill="#CFEAFF" stroke="'+INK+'" stroke-width="3"/>'+
+  '<rect x="326" y="94" width="48" height="56" rx="5" fill="#3B4F7D" stroke="'+INK+'" stroke-width="3"/>'+
+  '<rect x="318" y="60" width="64" height="22" rx="5" fill="#fff" stroke="'+INK+'" stroke-width="3"/>'+
+  '<text x="350" y="76" text-anchor="middle" font-family="Fredoka,sans-serif" font-weight="700" font-size="13" fill="'+INK+'">ESCOLA</text>'+
+  '<rect x="250" y="150" width="170" height="40" fill="#D9DEE9" stroke="'+INK+'" stroke-width="3"/>'+
+  '<polygon points="130,190 250,150 250,190" fill="#C5CEE0" stroke="'+INK+'" stroke-width="3" stroke-linejoin="round"/>'+
+  '<polygon points="420,150 440,150 440,163 460,163 460,177 480,177 480,190 420,190" fill="#C5CEE0" stroke="'+INK+'" stroke-width="3" stroke-linejoin="round"/>'+
+  '<g transform="translate(152 118)"><rect x="-1.5" y="0" width="3" height="65" fill="'+INK+'"/><rect x="-15" y="-30" width="30" height="30" rx="5" fill="'+BLUE+'" stroke="'+INK+'" stroke-width="2.5"/>'+
+  '<circle cx="-3" cy="-22" r="2.6" fill="#fff"/><path d="M-3 -18 V-11 H4 L7 -5" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-1" cy="-7" r="5" stroke="#fff" stroke-width="2" fill="none"/></g>'+
+  kid(P.leo,{x:52,y:214,arms:'dd'})+kid(P.you,{x:112,y:214,arms:'du'});
+}
+function scene2(){
+  var bike='<g fill="none" stroke="'+CORAL+'" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">'+
+    '<circle cx="272" cy="205" r="17" stroke="'+INK+'"/><circle cx="332" cy="205" r="17" stroke="'+INK+'"/>'+
+    '<path d="M272 205 L300 205 L324 178 L294 178 Z M294 178 L300 205 M324 178 L332 205"/>'+
+    '<path d="M286 172 H300 M320 172 L326 168 H334" stroke="'+INK+'"/></g>';
+  return sky()+
+  '<rect x="14" y="104" width="100" height="90" fill="#FFB38A" stroke="'+INK+'" stroke-width="3"/>'+wins(28,116,4,3,22,26)+
+  '<rect x="130" y="72" width="120" height="122" fill="#A9C6FF" stroke="'+INK+'" stroke-width="3"/>'+wins(146,86,4,4,26,26)+
+  '<rect x="268" y="112" width="86" height="82" fill="#FFE08A" stroke="'+INK+'" stroke-width="3"/>'+wins(284,124,3,3,24,24)+
+  '<rect x="372" y="88" width="100" height="106" fill="#C9B8FF" stroke="'+INK+'" stroke-width="3"/>'+wins(388,100,3,3,28,28)+
+  '<rect y="190" width="480" height="50" fill="#D5DBE8"/><rect y="190" width="480" height="5" fill="#B6BFD3"/>'+
+  '<defs><pattern id="dots2" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="7" cy="7" r="2.8" fill="#C58F00"/></pattern></defs>'+
+  '<rect x="0" y="198" width="480" height="30" fill="#FFC93C"/><rect x="0" y="198" width="480" height="30" fill="url(#dots2)"/>'+
+  bike+kid(P.bia,{x:90,y:216,cane:true,arms:'df'})+kid(P.you,{x:200,y:216,arms:'df'});
+}
+function scene3(){
+  return '<rect width="480" height="240" fill="#EAE4FF"/><rect y="190" width="480" height="50" fill="#C8B9F7"/><rect y="190" width="480" height="5" fill="#B4A2EE"/>'+
+  '<circle cx="64" cy="50" r="24" fill="#fff" stroke="'+INK+'" stroke-width="3"/><path d="M64 34 V50 L74 56" stroke="'+INK+'" stroke-width="3" fill="none" stroke-linecap="round"/>'+
+  '<rect x="330" y="162" width="46" height="28" fill="#8FA0C2" stroke="'+INK+'" stroke-width="3"/>'+
+  '<rect x="240" y="28" width="212" height="136" rx="12" fill="'+INK+'"/>'+
+  '<rect x="252" y="40" width="188" height="98" rx="6" fill="#9ED8FF"/>'+
+  '<path d="M252 122 Q300 88 346 114 T440 102 V138 H252Z" fill="#7ED6A0"/>'+
+  '<circle cx="410" cy="62" r="10" fill="#FFD84D"/>'+
+  '<circle cx="346" cy="86" r="19" fill="#fff" stroke="'+INK+'" stroke-width="2.5"/><polygon points="340,76 340,96 356,86" fill="'+INK+'"/>'+
+  '<rect x="284" y="116" width="124" height="16" rx="4" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="5 4"/>'+
+  '<circle cx="346" cy="152" r="4" fill="'+CORAL+'"/>'+
+  '<ellipse cx="128" cy="58" rx="22" ry="17" fill="#fff" stroke="'+INK+'" stroke-width="3"/><path d="M114 70 L110 80 L124 73Z" fill="#fff" stroke="'+INK+'" stroke-width="3" stroke-linejoin="round"/>'+
+  '<text x="128" y="66" text-anchor="middle" font-family="Fredoka,sans-serif" font-weight="700" font-size="22" fill="'+INK+'">?</text>'+
+  kid(P.davi,{x:86,y:214,arms:'uu',mood:'think'})+kid(P.you,{x:186,y:214,arms:'dd'});
+}
+function scene4(){
+  var b='<rect x="178" y="112" width="86" height="88" rx="10" fill="#fff" stroke="'+INK+'" stroke-width="4"/>';
+  b+='<rect x="186" y="122" width="32" height="32" rx="6" fill="'+CORAL+'" stroke="'+INK+'" stroke-width="2.5"/><circle cx="202" cy="138" r="9" fill="#fff"/>';
+  b+='<rect x="224" y="122" width="32" height="32" rx="6" fill="'+BLUE+'" stroke="'+INK+'" stroke-width="2.5"/><polygon points="240,128 232,148 248,148" fill="#fff"/>';
+  b+='<rect x="186" y="160" width="32" height="32" rx="6" fill="'+SUN+'" stroke="'+INK+'" stroke-width="2.5"/><rect x="194" y="168" width="16" height="16" rx="2" fill="#fff"/><line x1="202" y1="168" x2="202" y2="184" stroke="'+INK+'" stroke-width="2"/>';
+  b+='<rect x="224" y="160" width="32" height="32" rx="6" fill="'+GRAPE+'" stroke="'+INK+'" stroke-width="2.5"/><g transform="translate(240 177) scale(.8)"><polygon points="'+STAR5+'" fill="#fff"/></g>';
+  b+='<rect x="182" y="118" width="40" height="40" rx="8" fill="none" stroke="'+INK+'" stroke-width="3" stroke-dasharray="4 3"/>';
+  return sky()+grass()+tree(440)+
+  '<circle cx="380" cy="205" r="13" fill="#fff" stroke="'+INK+'" stroke-width="3"/><polygon points="380,197 387,202 384,210 376,210 373,202" fill="'+INK+'"/>'+
+  kid(P.mia,{x:130,y:214,arms:'df'})+b+kid(P.you,{x:310,y:214,flip:true,arms:'dd'});
+}
+function scene5(){
+  var lap='<rect x="212" y="142" width="68" height="8" rx="3" fill="#8FA0C2" stroke="'+INK+'" stroke-width="2.5"/>'+
+    '<rect x="220" y="102" width="52" height="40" rx="4" fill="'+INK+'"/><rect x="224" y="106" width="44" height="32" rx="2" fill="#9ED8FF"/>'+
+    '<polygon points="238,118 243,118 249,113 249,131 243,126 238,126" fill="'+INK+'"/>'+
+    '<path d="M253 116 Q257 122 253 128 M257 112 Q264 122 257 132" stroke="'+INK+'" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+  var zig=function(x,y){return '<path d="M'+x+' '+y+' l8 -7 l8 14 l8 -14 l8 14 l8 -7" stroke="'+CORAL+'" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';};
+  return '<rect width="480" height="240" fill="#DDF5E8"/><rect y="190" width="480" height="50" fill="#BFE6D0"/><rect y="190" width="480" height="5" fill="#9FD3B8"/>'+
+  '<rect x="22" y="26" width="150" height="76" rx="6" fill="#2E6B52" stroke="'+INK+'" stroke-width="4"/>'+
+  '<path d="M38 50 H110 M38 66 H138 M38 82 H92" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".85"/>'+
+  '<rect x="188" y="162" width="9" height="38" fill="#8B5E3C" stroke="'+INK+'" stroke-width="2.5"/><rect x="314" y="162" width="9" height="38" fill="#8B5E3C" stroke="'+INK+'" stroke-width="2.5"/>'+
+  '<rect x="178" y="150" width="154" height="12" rx="5" fill="#C98B5E" stroke="'+INK+'" stroke-width="3"/>'+lap+
+  kid(P.caio,{x:136,y:214,arms:'df'})+kid(P.you,{x:392,y:214,arms:'uu',mood:'open'})+kid(P.nico,{x:446,y:214,arms:'uu',mood:'open'})+
+  note(352,92,CORAL)+note(420,60,GRAPE)+note(462,100,BLUE)+zig(346,140);
+}
+function scene6(){
+  return sky()+grass()+tree(446)+
+  '<circle cx="246" cy="204" r="13" fill="#fff" stroke="'+INK+'" stroke-width="3"/><polygon points="246,196 253,201 250,209 242,209 239,201" fill="'+INK+'"/>'+
+  kid(P.you,{x:96,y:214,arms:'uu',mood:'open'})+kid(P.ana,{x:168,y:214,arms:'du',mood:'open'})+
+  kid(P.theo,{x:350,y:214,flip:true,arms:'du'});
+}
+function scene7(){
+  var widths=[170,160,174,118,170,164,148,172,110,158],lines='';
+  for(var k=0;k<widths.length;k++) lines+='<rect x="264" y="'+(66+k*11)+'" width="'+widths[k]+'" height="5" rx="2.5" fill="#8FA0C2"/>';
+  return '<rect width="480" height="240" fill="#FFF1C2"/><rect y="190" width="480" height="50" fill="#FFC76B"/><rect y="190" width="480" height="5" fill="#F2AE45"/>'+
+  '<rect x="250" y="22" width="210" height="162" rx="8" fill="#fff" stroke="'+INK+'" stroke-width="4"/>'+
+  '<rect x="264" y="34" width="182" height="20" rx="5" fill="'+BLUE+'"/>'+lines+
+  '<text x="70" y="86" font-family="Fredoka,sans-serif" font-weight="700" font-size="30" fill="'+CORAL+'">?</text>'+
+  '<text x="170" y="74" font-family="Fredoka,sans-serif" font-weight="700" font-size="22" fill="'+GRAPE+'">?</text>'+
+  kid(P.lia,{x:116,y:214,arms:'ud',mood:'think'})+kid(P.you,{x:192,y:214,arms:'df'});
+}
+
+/* ---------- option icons (64x64) ---------- */
+function person(x,y,fill,dash){
+  var d=dash?' stroke-dasharray="3 3"':'';
+  return '<circle cx="'+x+'" cy="'+y+'" r="6" fill="'+(dash?'none':'#F2C7A5')+'" '+S+d+'/>'+
+         '<path d="M'+(x-9)+' '+(y+30)+' V'+(y+18)+' a9 9 0 0 1 18 0 V'+(y+30)+'Z" fill="'+(dash?'none':fill)+'" '+S+d+'/>';
+}
+function bikeIcon(){
+  return '<circle cx="16" cy="40" r="9" fill="#fff" '+S+'/><circle cx="46" cy="40" r="9" fill="#fff" '+S+'/>'+
+    '<path d="M16 40 L30 40 L42 26 L26 26 Z M26 26 L30 40 M42 26 L46 40" fill="none" stroke="'+CORAL+'" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>'+
+    '<rect x="4" y="52" width="56" height="7" rx="2" fill="'+SUN+'" '+S+'/>';
+}
+function dotsRow(){var s='';[16,28,40,52].forEach(function(x){[30,38].forEach(function(y){s+='<circle cx="'+x+'" cy="'+y+'" r="2.5" fill="'+INK+'"/>';});});return s;}
+var BUBBLE='<path d="M10 12 H54 Q58 12 58 16 V40 Q58 44 54 44 H30 L20 54 V44 H10 Q6 44 6 40 V16 Q6 12 10 12Z"';
+var ICON={
+  ramp:'<polygon points="8,50 56,50 56,22" fill="#C5CEE0" '+S+'/><circle cx="33" cy="30" r="6" fill="#fff" '+S+'/><path d="M8 18 H22 M16 12 L22 18 L16 24" fill="none" '+S+'/>',
+  push:'<rect x="6" y="22" width="22" height="16" rx="8" fill="#F2C7A5" '+S+'/><circle cx="44" cy="34" r="12" fill="#fff" '+S+'/><circle cx="44" cy="34" r="3" fill="'+INK+'"/><path d="M8 50 H28 M22 45 L28 50 L22 55" fill="none" '+S+'/>',
+  stairs:'<polygon points="8,52 8,42 20,42 20,32 32,32 32,22 44,22 44,52" fill="#C5CEE0" '+S+'/><path d="M50 14 V34 M44 28 L50 34 L56 28" fill="none" '+S+'/>',
+  bikeMove:bikeIcon()+'<path d="M18 22 Q30 6 46 12 M40 6 L47 12 L39 17" fill="none" '+S+'/>',
+  bikeStay:bikeIcon(),
+  hand:person(16,12,CORAL,false)+person(46,12,BLUE,false)+'<path d="M26 34 H38 M32 29 L38 34 L32 39" fill="none" '+S+'/><text x="55" y="12" font-family="Fredoka,sans-serif" font-weight="700" font-size="14" fill="'+CORAL+'">!</text>',
+  tactile:'<rect x="6" y="22" width="52" height="24" rx="5" fill="'+SUN+'" '+S+'/>'+dotsRow()+'<path d="M50 6 L58 20" fill="none" stroke="'+INK+'" stroke-width="5" stroke-linecap="round"/><path d="M50 6 L58 20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>',
+  subtitles:'<rect x="6" y="12" width="52" height="38" rx="7" fill="'+BLUE+'" '+S+'/><circle cx="32" cy="24" r="6" fill="#fff"/><polygon points="30,21 30,27 36,24" fill="'+BLUE+'"/><rect x="14" y="34" width="36" height="5" rx="2.5" fill="#fff"/><rect x="14" y="42" width="24" height="5" rx="2.5" fill="#fff"/>',
+  volume:'<polygon points="10,26 22,26 34,16 34,48 22,38 10,38" fill="'+SUN+'" '+S+'/><path d="M42 24 Q48 32 42 40 M48 18 Q58 32 48 46" fill="none" '+S+'/>',
+  clock:'<circle cx="32" cy="32" r="22" fill="#fff" '+S+'/><path d="M32 18 V32 L42 38" fill="none" '+S+'/>',
+  board:'<rect x="6" y="6" width="24" height="24" rx="5" fill="'+CORAL+'" '+S+'/><rect x="34" y="6" width="24" height="24" rx="5" fill="'+BLUE+'" '+S+'/><rect x="6" y="34" width="24" height="24" rx="5" fill="'+SUN+'" '+S+'/><rect x="34" y="34" width="24" height="24" rx="5" fill="'+GRAPE+'" '+S+'/><path d="M38 40 L56 47 L48 50 L45 58Z" fill="#fff" '+S+'/>',
+  bubble:BUBBLE+' fill="#fff" '+S+'/><circle cx="20" cy="28" r="3" fill="'+INK+'"/><circle cx="32" cy="28" r="3" fill="'+INK+'"/><circle cx="44" cy="28" r="3" fill="'+INK+'"/>',
+  leave:'<rect x="8" y="8" width="26" height="48" rx="3" fill="#C98B5E" '+S+'/><circle cx="28" cy="34" r="2.5" fill="'+INK+'"/><path d="M40 32 H58 M52 26 L58 32 L52 38" fill="none" '+S+'/>',
+  shh:BUBBLE+' fill="'+SUN+'" '+S+'/><text x="32" y="35" text-anchor="middle" font-family="Fredoka,sans-serif" font-weight="700" font-size="17" fill="'+INK+'">shh</text>',
+  music:'<circle cx="20" cy="46" r="7" fill="'+INK+'"/><circle cx="44" cy="40" r="7" fill="'+INK+'"/><path d="M26 46 V14 L50 8 V40 M26 24 L50 18" fill="none" '+S+'/>',
+  power:'<path d="M20 18 A18 18 0 1 0 44 18" fill="none" stroke="'+INK+'" stroke-width="5" stroke-linecap="round"/><line x1="32" y1="8" x2="32" y2="30" stroke="'+INK+'" stroke-width="5" stroke-linecap="round"/>',
+  screen:'<rect x="8" y="10" width="48" height="34" rx="5" fill="#fff" '+S+'/><path d="M4 52 H60" fill="none" '+S+'/><polygon points="18,28 24,28 31,22 31,38 24,33 18,33" fill="'+SUN+'" '+S+'/><path d="M37 25 Q42 30 37 35 M42 21 Q50 30 42 39" fill="none" '+S+'/>',
+  together:person(18,10,SUN,false)+person(46,10,GRASS,false)+'<path d="M27 38 H37" fill="none" '+S+'/><circle cx="32" cy="54" r="6" fill="#fff" '+S+'/>',
+  noPlay:'<circle cx="32" cy="32" r="22" fill="#fff" stroke="'+CORAL+'" stroke-width="6"/><line x1="17" y1="47" x2="47" y2="17" stroke="'+CORAL+'" stroke-width="6" stroke-linecap="round"/>',
+  forget:person(13,12,SUN,false)+person(32,12,GRASS,false)+person(51,12,GRAPE,true),
+  book:'<path d="M32 16 Q18 10 6 14 V50 Q18 46 32 52 Q46 46 58 50 V14 Q46 10 32 16Z" fill="#fff" '+S+'/><path d="M32 16 V52" fill="none" '+S+'/><path d="M12 24 H26 M12 31 H26 M12 38 H22" fill="none" stroke="'+INK+'" stroke-width="2.4" stroke-linecap="round"/><rect x="38" y="22" width="14" height="12" rx="2" fill="'+SUN+'" stroke="'+INK+'" stroke-width="2.4"/><path d="M38 41 H52 M38 46 H48" fill="none" stroke="'+INK+'" stroke-width="2.4" stroke-linecap="round"/>',
+  excl:BUBBLE+' fill="'+CORAL_SOFT()+'" '+S+'/><text x="32" y="38" text-anchor="middle" font-family="Fredoka,sans-serif" font-weight="700" font-size="26" fill="'+CORAL+'">!</text>',
+  fast:'<path d="M8 16 L28 32 L8 48Z" fill="'+SUN+'" '+S+'/><path d="M30 16 L50 32 L30 48Z" fill="'+SUN+'" '+S+'/><path d="M57 16 V48" fill="none" '+S+'/>'
+};
+function CORAL_SOFT(){return '#FFE3E1';}
+
+/* ---------- the seven adventures ---------- */
+var Q=[
+ {who:'O Léo e a escada',scene:scene1,
+  alt:'Léo, de cadeira de rodas, e você diante da escola. À esquerda há uma rampa e à direita há uma escada.',
+  text:'O Léo usa cadeira de rodas. Para entrar na escola, tem uma escada e uma rampa. O que você faz?',
+  opts:[
+   {icon:'push',label:'Empurrar a cadeira dele sem avisar',ok:false,why:'Antes de ajudar, a gente pergunta. A cadeira é do Léo e ele sabe como se mexer.'},
+   {icon:'ramp',label:'Mostrar a rampa e perguntar: “Quer ajuda?”',ok:true,why:'A rampa deixa o Léo entrar na escola sem escada. E perguntar antes de ajudar mostra respeito.'},
+   {icon:'stairs',label:'Subir a escada e deixar o Léo para trás',ok:false,why:'O Léo ficaria sozinho lá fora. É melhor ir junto, pelo caminho que serve para todo mundo.'}
+  ],
+  tip:'Pergunte antes de ajudar.',
+  tool:{name:'Rampa',desc:'Ajuda quem usa cadeira de rodas a subir sem escada.',icon:'ramp'}},
+ {who:'A Bia e a faixa amarela',scene:scene2,
+  alt:'Bia, com bengala branca, caminha pela faixa amarela do piso tátil. Uma bicicleta está parada em cima da faixa.',
+  text:'A Bia não enxerga e anda com uma bengala. Ela segue a faixa amarela do chão, o piso tátil. Tem uma bicicleta parada em cima da faixa!',
+  opts:[
+   {icon:'bikeStay',label:'Deixar a bicicleta lá. A Bia que desvie',ok:false,why:'A Bia pode bater na bicicleta e se machucar. A faixa amarela precisa ficar livre.'},
+   {icon:'hand',label:'Pegar a Bia pela mão e puxar, sem avisar',ok:false,why:'Ser puxado sem aviso dá susto. Se for ajudar, fale primeiro: “Oi, Bia, sou eu. Posso ajudar?”'},
+   {icon:'bikeMove',label:'Tirar a bicicleta da faixa amarela',ok:true,why:'A Bia sente as bolinhas da faixa com a bengala e com os pés. Com o caminho livre, ela anda com segurança.'}
+  ],
+  tip:'Deixe o caminho livre.',
+  tool:{name:'Piso tátil',desc:'Faixa amarela com relevo que guia quem não enxerga.',icon:'tactile'}},
+ {who:'O Davi e o vídeo',scene:scene3,
+  alt:'Davi faz sinais de Libras com as mãos. A televisão passa um vídeo sem legenda.',
+  text:'O Davi é surdo e conversa em Libras, a língua de sinais. A turma vai ver um vídeo, mas ele está sem legenda.',
+  opts:[
+   {icon:'subtitles',label:'Ligar a legenda do vídeo',ok:true,why:'A legenda mostra na tela o que as pessoas falam. Assim o Davi acompanha o vídeo junto com a turma.'},
+   {icon:'volume',label:'Aumentar o volume do vídeo',ok:false,why:'Mais volume não ajuda quem não escuta. O Davi precisa de algo para ver, como a legenda.'},
+   {icon:'clock',label:'Contar o final do vídeo para o Davi depois',ok:false,why:'Ele perderia a diversão junto com os amigos. Todo mundo pode assistir ao mesmo tempo!'}
+  ],
+  tip:'Uma informação pode ter mais de um formato, como som e legenda.',
+  tool:{name:'Legenda',desc:'Escreve na tela o que é falado, para quem não escuta.',icon:'subtitles'}},
+ {who:'A Mia e a prancha',scene:scene4,
+  alt:'Mia segura uma prancha com quatro figuras: bola, escorregador, livro e estrela. Um colega olha para ela.',
+  text:'A Mia não fala com a voz. Ela usa uma prancha de figuras para dizer o que quer. Ela está escolhendo a brincadeira, mas demora um pouquinho.',
+  opts:[
+   {icon:'bubble',label:'Responder no lugar dela',ok:false,why:'A Mia sabe o que quer. Quando respondem por ela, ninguém descobre a escolha dela.'},
+   {icon:'board',label:'Esperar com calma e olhar o que ela aponta',ok:true,why:'A Mia conversa com as figuras da prancha. Esperar com calma dá tempo para ela dizer o que pensa.'},
+   {icon:'leave',label:'Ir brincar sozinho porque ela demora',ok:false,why:'Quem conversa de outro jeito também quer brincar com a turma. Um pouco de paciência resolve.'}
+  ],
+  tip:'Dê tempo. Cada pessoa conversa do seu jeito.',
+  tool:{name:'Prancha de comunicação',desc:'Figuras para quem não fala com a voz dizer o que quer.',icon:'board'}},
+ {who:'O Caio e o computador',scene:scene5,
+  alt:'Caio, de fones de ouvido, usa um computador que fala. Do outro lado da sala, duas crianças gritam e fazem barulho.',
+  text:'O Caio não enxerga e usa um leitor de tela, que lê em voz alta o que está no computador. A sala está bem barulhenta.',
+  opts:[
+   {icon:'music',label:'Aumentar a música da sala',ok:false,why:'Com a música alta, o Caio não escuta o computador falar.'},
+   {icon:'power',label:'Desligar o computador dele',ok:false,why:'O leitor de tela deixa o Caio fazer a atividade sozinho. Mexer sem pedir atrapalha.'},
+   {icon:'shh',label:'Fazer silêncio para o Caio ouvir',ok:true,why:'Com a sala calma, o Caio escuta o leitor de tela e faz a atividade sozinho.'}
+  ],
+  tip:'Cuide do barulho para ajudar quem ouve o computador.',
+  tool:{name:'Leitor de tela',desc:'Lê em voz alta o que está no computador.',icon:'screen'}},
+ {who:'O Théo e o pega-pega',scene:scene6,
+  alt:'Théo, que usa uma perna mecânica, acena para dois colegas que brincam com uma bola.',
+  text:'O Théo usa uma perna mecânica, chamada prótese. A turma vai brincar de pega-pega e ele quer entrar na brincadeira.',
+  opts:[
+   {icon:'together',label:'Combinar as regras para todo mundo brincar junto',ok:true,why:'Quando a turma combina as regras com o Théo, todo mundo se diverte.'},
+   {icon:'noPlay',label:'Dizer que ele não pode brincar',ok:false,why:'Ninguém sabe melhor que o Théo o que ele consegue fazer. Todo mundo pode brincar!'},
+   {icon:'forget',label:'Chamar só os outros colegas',ok:false,why:'Ficar de fora machuca. Convidar todo mundo é o primeiro passo.'}
+  ],
+  tip:'Combine as regras junto com a pessoa.',
+  tool:{name:'Regras combinadas',desc:'Brincadeiras em que todo mundo participa, do seu jeito.',icon:'together'}},
+ {who:'A Lia e o cartaz',scene:scene7,
+  alt:'Lia coça a cabeça diante de um cartaz cheio de texto, sem entender. Um colega está ao lado dela.',
+  text:'A Lia tem dificuldade para entender o cartaz da escola. O texto é bem comprido e cheio de palavras difíceis.',
+  opts:[
+   {icon:'excl',label:'Dizer: “Que fácil! Você devia saber ler isso”',ok:false,why:'Esse tipo de frase faz a Lia se sentir mal. Cada pessoa aprende no seu tempo.'},
+   {icon:'book',label:'Ler junto com ela e explicar com palavras fáceis',ok:true,why:'Ler junto, com palavras simples e sem pressa, ajuda a Lia a entender o cartaz.'},
+   {icon:'fast',label:'Ler tudo bem rápido e sair andando',ok:false,why:'Rápido demais deixa a Lia perdida. Vale ir devagar e conversar sobre o que está escrito.'}
+  ],
+  tip:'Explique com calma e palavras simples.',
+  tool:{name:'Linguagem simples',desc:'Palavras fáceis e frases curtas para todo mundo entender.',icon:'book'}}
+];
+
+/* ---------- state and rendering ---------- */
+var $=function(s){return document.querySelector(s);};
+var state={i:0,res:[],tries:0,solved:false,order:[],fb:''};
+var PRAISE=['Isso mesmo!','Muito bem!','Perfeito!','Boa escolha!','Você é demais!','Que legal!','Parabéns!'];
+var STAR='<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 15,9 22,9.5 16.5,14.5 18.5,22 12,18 5.5,22 7.5,14.5 2,9.5 9,9"/></svg>';
+var CHECK='<svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20" fill="'+GRASS+'" stroke="'+INK+'" stroke-width="3"/><path d="M12 23 L19 30 L32 15" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var THINK='<svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20" fill="'+SUN+'" stroke="'+INK+'" stroke-width="3"/><text x="22" y="30" text-anchor="middle" font-family="Fredoka,sans-serif" font-weight="700" font-size="26" fill="'+INK+'">?</text></svg>';
+var SPEAKER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3,9 8,9 13,5 13,19 8,15 3,15" fill="currentColor"/><path d="M17 8.5 Q20 12 17 15.5"/></svg>';
+var BAD='<span class="mark" aria-hidden="true"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="'+CORAL+'" stroke="'+INK+'" stroke-width="3"/><path d="M12 12 L24 24 M24 12 L12 24" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg></span>';
+var GOOD='<span class="mark" aria-hidden="true"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="'+GRASS+'" stroke="'+INK+'" stroke-width="3"/><path d="M10 19 L16 25 L27 12" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+
+function svgBox(inner,label){return '<svg viewBox="0 0 480 240" role="img" aria-label="'+label+'">'+inner+'</svg>';}
+function top(){try{window.scrollTo({top:0,behavior:'auto'});}catch(e){}}
+function reduced(){return window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+function show(v){['start','play','end'].forEach(function(id){$('#'+id).hidden=(id!==v);});top();}
+
+function renderStars(){
+  var n=0;
+  var html=Q.map(function(_,k){
+    var r=state.res[k]; if(r==='first') n++;
+    var cls=r==='first'?'got':r==='retry'?'done':(k===state.i?'now':'todo');
+    return '<span class="star '+cls+'">'+STAR+'</span>';
+  }).join('');
+  var el=$('#stars'); el.innerHTML=html; el.setAttribute('aria-label',n+' estrelas ganhas de '+Q.length);
+}
+
+function renderQ(){
+  var q=Q[state.i];
+  state.tries=0; state.solved=false; state.fb='';
+  stopSpeak();
+  $('#scene').innerHTML=svgBox(q.scene(),q.alt);
+  $('#kicker').textContent='Aventura '+(state.i+1)+' de '+Q.length;
+  $('#who').textContent=q.who;
+  $('#situation').textContent=q.text;
+  state.order=shuffle(q.opts.map(function(_,k){return k;}));
+  $('#options').innerHTML=state.order.map(function(k,pos){
+    var o=q.opts[k];
+    return '<button type="button" class="opt c'+pos+'" data-k="'+k+'"><span class="ico"><svg viewBox="0 0 64 64" aria-hidden="true">'+ICON[o.icon]+'</svg></span><span>'+o.label+'</span></button>';
+  }).join('');
+  var fb=$('#feedback'); fb.hidden=true; fb.innerHTML=''; fb.className='';
+  renderStars();
+  show('play');
+  var who=$('#who'); try{who.focus({preventScroll:true});}catch(e){}
+}
+
+function pick(k,btn){
+  if(state.solved) return;
+  var q=Q[state.i], o=q.opts[k];
+  state.tries++;
+  var all=Array.prototype.slice.call(document.querySelectorAll('#options .opt'));
+  if(o.ok){
+    state.solved=true;
+    state.res[state.i]=state.tries===1?'first':'retry';
+    all.forEach(function(b){b.disabled=true; if(b!==btn&&!b.classList.contains('is-wrong')) b.classList.add('is-other');});
+    btn.classList.add('is-right');
+    btn.insertAdjacentHTML('beforeend',GOOD+'<span class="sr"> Resposta certa.</span>');
+    renderStars();
+    showFeedback(true,o.why,q.tip);
+    confetti();
+  } else {
+    btn.classList.add('is-wrong'); btn.disabled=true;
+    btn.insertAdjacentHTML('beforeend',BAD+'<span class="sr"> Não foi essa.</span>');
+    showFeedback(false,o.why);
+    var nx=document.querySelector('#options .opt:not(:disabled)'); if(nx){try{nx.focus({preventScroll:true});}catch(e){}}
+  }
+}
+
+function showFeedback(ok,text,tip){
+  var f=$('#feedback'), last=state.i===Q.length-1;
+  var head=ok?PRAISE[state.i%PRAISE.length]:'Vamos tentar outra vez!';
+  state.fb=head+' '+text+(ok?' Dica de respeito: '+tip:'');
+  f.hidden=false; f.className='feedback '+(ok?'ok':'try');
+  f.innerHTML='<div class="fb-head"><span class="fb-ico">'+(ok?CHECK:THINK)+'</span><h3>'+head+'</h3></div>'+
+    '<p>'+text+'</p>'+
+    (ok?'<p class="tip"><b>Dica de respeito:</b> '+tip+'</p>':'')+
+    '<div class="fb-actions">'+
+      (ok?'<button type="button" class="btn" id="next">'+(last?'Ver resultado':'Próxima aventura')+'</button>':'')+
+      '<button type="button" class="chip" data-say="fb">'+SPEAKER+'Ouvir</button></div>';
+  try{f.scrollIntoView({block:'nearest',behavior:reduced()?'auto':'smooth'});}catch(e){}
+  if(ok){var n=$('#next'); if(n){try{n.focus({preventScroll:true});}catch(e){}}}
+}
+
+function begin(){state.i=0;state.res=[];renderQ();}
+function next(){
+  state.i++;
+  if(state.i>=Q.length){renderEnd();show('end');var t=$('#endTitle');try{t.focus({preventScroll:true});}catch(e){}}
+  else renderQ();
+}
+
+function renderEnd(){
+  stopSpeak();
+  var n=state.res.filter(function(r){return r==='first';}).length;
+  var msg=n>=6?'Campeão da inclusão!':n>=4?'Você ajudou muito bem!':'Boa jogada! Vamos de novo?';
+  state.endText=msg+' Você ajudou os '+Q.length+' amigos e acertou '+n+' de primeira.';
+  $('#endTitle').textContent=msg;
+  $('#endText').textContent='Você ajudou os '+Q.length+' amigos e acertou '+n+' de primeira.';
+  var bs=$('#bigStars');
+  bs.innerHTML=Q.map(function(_,k){return '<span class="star '+(state.res[k]==='first'?'got':'done')+'">'+STAR+'</span>';}).join('');
+  bs.setAttribute('aria-label',n+' estrelas de '+Q.length);
+  $('#tools').innerHTML=Q.map(function(q){
+    return '<li class="tool"><span class="ico"><svg viewBox="0 0 64 64" aria-hidden="true">'+ICON[q.tool.icon]+'</svg></span><div><b class="t-name">'+q.tool.name+'</b><span class="t-desc">'+q.tool.desc+'</span></div></li>';
+  }).join('');
+}
+
+function confetti(){
+  if(reduced()) return;
+  var box=$('#confetti'); box.innerHTML='';
+  var cols=[SUN,CORAL,BLUE,GRASS,GRAPE];
+  for(var k=0;k<24;k++){
+    var s=document.createElement('i');
+    s.style.left=(Math.random()*100)+'%';
+    s.style.background=cols[k%cols.length];
+    s.style.animationDelay=(Math.random()*.3)+'s';
+    s.style.setProperty('--r',(Math.random()*720-360)+'deg');
+    box.appendChild(s);
+  }
+  setTimeout(function(){box.innerHTML='';},2000);
+}
+
+/* ---------- read aloud ---------- */
+var tts=('speechSynthesis' in window)&&('SpeechSynthesisUtterance' in window);
+if(!tts) document.documentElement.classList.add('no-tts');
+function stopSpeak(){try{if(tts) window.speechSynthesis.cancel();}catch(e){}}
+function speak(t){
+  if(!tts) return;
+  try{
+    var syn=window.speechSynthesis; syn.cancel();
+    var u=new SpeechSynthesisUtterance(t); u.lang='pt-BR'; u.rate=.92;
+    var v=(syn.getVoices()||[]).filter(function(x){return /^pt/i.test(x.lang);})[0]; if(v) u.voice=v;
+    syn.speak(u);
+  }catch(e){}
+}
+function sayText(kind){
+  if(kind==='intro') return 'Jogo da Inclusão. Sete amigos precisam da sua ajuda. Escolha a melhor forma de ajudar cada um. Errou? Sem problema, é só tentar outra vez.';
+  if(kind==='fb') return state.fb;
+  if(kind==='end') return state.endText||'';
+  var q=Q[state.i];
+  return q.who+'. '+q.text+' Como você ajuda? '+state.order.map(function(k,n){return 'Opção '+(n+1)+': '+q.opts[k].label.replace(/[“”]/g,'')+'.';}).join(' ');
+}
+
+/* ---------- wiring ---------- */
+$('#heroArt').innerHTML=svgBox(sceneHero(),'Cinco crianças sorrindo no pátio da escola. Uma usa cadeira de rodas, uma usa bengala branca e as outras acenam.');
+document.addEventListener('click',function(e){
+  var say=e.target.closest('[data-say]'); if(say){speak(sayText(say.getAttribute('data-say')));return;}
+  var opt=e.target.closest('button.opt'); if(opt&&!opt.disabled){pick(parseInt(opt.getAttribute('data-k'),10),opt);return;}
+  if(e.target.closest('#go')||e.target.closest('#again')){begin();return;}
+  if(e.target.closest('#next')){next();return;}
+});
+})();
+</script>
+
+</body>
+</html>
